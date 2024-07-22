@@ -17,10 +17,12 @@ function show_help() {
 function display_ports() {
     if [ -z "$1" ]; then
         echo "Active Ports and Services:"
-        ss -tuln
+        echo -e "Proto\tRecv-Q\tSend-Q\tLocal Address\tForeign Address\tState"
+        ss -tuln | awk 'NR>1 {print $1 "\t" $2 "\t" $3 "\t" $5 "\t" $6 "\t" $7}' | column -t
     else
         echo "Details for Port $1:"
-        ss -tuln | grep ":$1 "
+        echo -e "Proto\tRecv-Q\tSend-Q\tLocal Address\tForeign Address\tState"
+        ss -tuln | grep ":$1 " | awk '{print $1 "\t" $2 "\t" $3 "\t" $5 "\t" $6 "\t" $7}' | column -t
     fi
 }
 
@@ -28,13 +30,14 @@ function display_ports() {
 function list_docker() {
     if [ -z "$1" ]; then
         echo "Docker Images:"
-        docker images
+        docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.CreatedAt}}" | column -t
+        echo ""
         echo "Docker Containers:"
-        docker ps -a
+        docker ps -a --format "table {{.ID}}\t{{.Image}}\t{{.Command}}\t{{.CreatedAt}}\t{{.Status}}\t{{.Ports}}" | column -t
     else
         if docker ps -a | grep -q "$1"; then
             echo "Details for Container $1:"
-            docker inspect "$1"
+            docker inspect "$1" | jq '.[] | {Id: .Id, Name: .Name, Status: .State.Status, Image: .Config.Image, Ports: .NetworkSettings.Ports}'
         else
             echo "No such container found."
         fi
@@ -45,7 +48,7 @@ function list_docker() {
 function display_nginx() {
     if [ -z "$1" ]; then
         echo "Nginx Domains and Ports:"
-        grep -E 'server_name|listen' /etc/nginx/nginx.conf /etc/nginx/sites-enabled/* | awk '{print $2}'
+        grep -E 'server_name|listen' /etc/nginx/nginx.conf /etc/nginx/sites-enabled/* | awk '{print $1 "\t" $2}' | column -t
     else
         echo "Configuration for Domain $1:"
         grep -A 10 "server_name $1;" /etc/nginx/nginx.conf /etc/nginx/sites-enabled/*
@@ -56,7 +59,8 @@ function display_nginx() {
 function list_users() {
     if [ -z "$1" ]; then
         echo "Users and Last Login Times:"
-        lastlog
+        echo -e "Username\tLast Login"
+        lastlog | awk 'NR>1 {print $1 "\t" $4 " " $5 " " $6 " " $7}' | column -t
     else
         echo "Details for User $1:"
         lastlog | grep "$1"
@@ -66,7 +70,7 @@ function list_users() {
 # Function to display activities within a specified time range
 function display_time_range() {
     echo "Activities between $1 and $2:"
-    journalctl --since "$1" --until "$2"
+    journalctl --since "$1" --until "$2" --no-pager
 }
 
 # Parse command line arguments
