@@ -1,0 +1,11 @@
+/usr/local/bin/devopsfetch.log {
+    daily
+    rotate 7
+    compress
+    missingok
+    notifempty
+    create 0640 root root
+    postrotate
+        systemctl restart devopsfetch > /dev/null 2>/dev/null || true
+    endscript
+}
