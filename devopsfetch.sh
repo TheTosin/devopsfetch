@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Function to display help
 function show_help() {
     echo "Usage: devopsfetch.sh [OPTIONS]"
     echo ""
@@ -13,7 +12,6 @@ function show_help() {
     echo "  -h, --help             Show this help message"
 }
 
-# Function to display active ports
 function display_ports() {
     if [ -z "$1" ]; then
         echo "Active Ports and Services:"
@@ -26,7 +24,6 @@ function display_ports() {
     fi
 }
 
-# Function to list Docker images/containers
 function list_docker() {
     if [ -z "$1" ]; then
         echo "Docker Images:"
@@ -44,7 +41,6 @@ function list_docker() {
     fi
 }
 
-# Function to display Nginx configurations
 function display_nginx() {
     if [ -z "$1" ]; then
         echo "Nginx Domains and Ports:"
@@ -55,7 +51,6 @@ function display_nginx() {
     fi
 }
 
-# Function to list users and their last login
 function list_users() {
     if [ -z "$1" ]; then
         echo "Users and Last Login Times:"
@@ -67,7 +62,6 @@ function list_users() {
     fi
 }
 
-# Function to display activities within a specified time range
 function display_time_range() {
     echo "Activities between $1 and $2:"
     journalctl --since "$1" --until "$2" --no-pager
