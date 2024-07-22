@@ -16,7 +16,7 @@ sudo apt-get install -y docker.io nginx
 
 # Copy the devopsfetch script
 print_header "Copying devopsfetch Script"
-sudo cp devopsfetch.sh /usr/local/bin/devopsfetch
+sudo cp /mnt/c/Users/HP/downloads/devopsfetch/devopsfetch.sh /usr/local/bin/devopsfetch
 sudo chmod +x /usr/local/bin/devopsfetch
 
 # Create a systemd service file
