@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Function to print a section header
 function print_header() {
     local header="$1"
     echo
@@ -9,17 +8,14 @@ function print_header() {
     echo "==============================="
 }
 
-# Install dependencies
 print_header "Installing Dependencies"
 sudo apt-get update
 sudo apt-get install -y docker.io nginx
 
-# Copy the devopsfetch script
 print_header "Copying devopsfetch Script"
 sudo cp /mnt/c/Users/HP/downloads/devopsfetch/devopsfetch.sh /usr/local/bin/devopsfetch
 sudo chmod +x /usr/local/bin/devopsfetch
 
-# Create a systemd service file
 print_header "Creating Systemd Service"
 sudo bash -c 'cat > /etc/systemd/system/devopsfetch.service <<EOF
 [Unit]
