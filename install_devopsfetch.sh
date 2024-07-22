@@ -1,17 +1,26 @@
 #!/bin/bash
 
+# Function to print a section header
+function print_header() {
+    local header="$1"
+    echo
+    echo "==============================="
+    echo "$header"
+    echo "==============================="
+}
+
 # Install dependencies
-echo "Installing dependencies..."
+print_header "Installing Dependencies"
 sudo apt-get update
 sudo apt-get install -y docker.io nginx
 
 # Copy the devopsfetch script
-echo "Copying devopsfetch script..."
+print_header "Copying devopsfetch Script"
 sudo cp devopsfetch.sh /usr/local/bin/devopsfetch
 sudo chmod +x /usr/local/bin/devopsfetch
 
 # Create a systemd service file
-echo "Creating systemd service..."
+print_header "Creating Systemd Service"
 sudo bash -c 'cat > /etc/systemd/system/devopsfetch.service <<EOF
 [Unit]
 Description=DevOpsFetch Monitoring Service
@@ -26,10 +35,11 @@ RestartSec=60
 WantedBy=multi-user.target
 EOF'
 
-# Reload systemd, enable and start the service
-echo "Starting and enabling devopsfetch service..."
+# Reload systemd, enable, and start the service
+print_header "Starting and Enabling devopsfetch Service"
 sudo systemctl daemon-reload
 sudo systemctl enable devopsfetch
 sudo systemctl start devopsfetch
 
-echo "Installation completed."
+# Final message
+print_header "Installation Completed"
