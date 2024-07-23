@@ -1,13 +1,13 @@
-Devopsfetch Script Documentation
-Introduction
-The devopsfetch script is a comprehensive tool designed to gather and display various system information, including active ports, Docker containers, Nginx configurations, user logins, and system activities within a specified time range. The script offers a user-friendly interface and outputs data in a readable format.
+# DevOpsfetch Script Documentation
 
-# DevOpsFetch
+## Introduction
+The devopsfetch script is a comprehensive tool designed to gather and display various system information, including active ports, Docker containers, Nginx configurations, user logins, and system activities within a specified time range. The script offers a user-friendly interface and outputs data in a readable format.
 
 ## Installation
 
 Run the installation script:
 
+bash
 sudo bash install_devopsfetch.sh
 
 USAGE
