@@ -12,19 +12,33 @@ function show_help() {
     echo ""
     echo "Examples:"
     echo "  devopsfetch.sh -d           # List all Docker images and containers"
-    echo "  devopsfetch.sh -d nginx     # Show details for the nginx container"
+    echo "  devopsfetch.sh -d hello-world     # Show details for the hello-world container"
     echo "  devopsfetch.sh -p           # Show all active ports"
     echo "  devopsfetch.sh -p 80        # Show details for port 80"
 }
 function display_ports() {
     if [ -z "$1" ]; then
         echo "Active Ports and Services:"
-        printf "%-10s %-10s %-10s %-20s %-20s %-10s\n" "PROTOCOL" "RECV-Q" "SEND-Q" "LOCAL ADDRESS" "FOREIGN ADDRESS" "STATE"
-        ss -tuln | awk 'NR>1 {printf "%-10s %-10s %-10s %-20s %-20s %-10s\n", $1, $2, $3, $5, $6, $7}'
+        printf "%-10s %-10s %-10s %-20s %-20s %-20s %-10s\n" "PROTOCOL" "RECV-Q" "SEND-Q" "LOCAL ADDRESS" "FOREIGN ADDRESS" "SERVICE" "STATE"
+        ss -tuln | awk 'NR>1 {
+            split($5, a, ":")
+            port = a[2]
+            cmd = "grep -w " port " /etc/services 2>/dev/null | awk \"{print \$1}\""
+            cmd | getline service
+            close(cmd)
+            if (service == "") service = "Unknown"
+            printf "%-10s %-10s %-10s %-20s %-20s %-20s %-10s\n", $1, $2, $3, $5, $6, service, $7
+        }'
     else
         echo "Details for Port $1:"
-        printf "%-10s %-10s %-10s %-20s %-20s %-10s\n" "PROTOCOL" "RECV-Q" "SEND-Q" "LOCAL ADDRESS" "FOREIGN ADDRESS" "STATE"
-        ss -tuln | grep ":$1 " | awk '{printf "%-10s %-10s %-10s %-20s %-20s %-10s\n", $1, $2, $3, $5, $6, $7}'
+        printf "%-10s %-10s %-10s %-20s %-20s %-20s %-10s\n" "PROTOCOL" "RECV-Q" "SEND-Q" "LOCAL ADDRESS" "FOREIGN ADDRESS" "SERVICE" "STATE"
+        ss -tuln | awk -v port="$1" '$5 ~ ":"port"($|,) {
+            cmd = "grep -w " port " /etc/services 2>/dev/null | awk \"{print \$1}\""
+            cmd | getline service
+            close(cmd)
+            if (service == "") service = "Unknown"
+            printf "%-10s %-10s %-10s %-20s %-20s %-20s %-10s\n", $1, $2, $3, $5, $6, service, $7
+        }'
     fi
 }
 function list_docker() {
