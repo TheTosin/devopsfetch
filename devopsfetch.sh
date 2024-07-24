@@ -66,7 +66,7 @@ function list_docker() {
 function display_nginx() {
     if [ -z "$1" ]; then
         echo "Nginx Domains, Ports, and Proxies:"
-        echo "-----------------------------------------------------------------------------------------------------------------"
+        echo "---------------------------------------------------------------------------------------------------------------------------------------------"
         printf "| %-30s | %-15s | %-30s | %-50s |\n" "DOMAIN" "PORT" "PROXY" "CONFIG FILE"
         awk '
         BEGIN { OFS="\t" }
@@ -81,7 +81,7 @@ function display_nginx() {
         }
         ' /etc/nginx/nginx.conf /etc/nginx/sites-enabled/* | sort -u |
         while IFS=$'\t' read -r domain port proxy file; do
-            echo "-----------------------------------------------------------------------------------"
+            echo "-----------------------------------------------------------------------------------------------------------------------------------------"
             printf "| %-30s | %-15s | %-30s | %-50s |\n" "$domain" "$port" "$proxy" "$file"
         done
     else
