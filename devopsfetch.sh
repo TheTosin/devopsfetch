@@ -16,46 +16,51 @@ function show_help() {
     echo "  devopsfetch.sh -p           # Show all active ports"
     echo "  devopsfetch.sh -p 80        # Show details for port 80"
 }
-function display_ports() {
-    if [ -z "$1" ]; then
+display_ports() {
+    port_filter="$1"
+
+    if [ -z "$port_filter" ]; then
         echo "Active Ports and Services:"
-        printf "%-10s %-10s %-10s %-20s %-20s %-20s %-10s\n" "PROTOCOL" "RECV-Q" "SEND-Q" "LOCAL ADDRESS" "FOREIGN ADDRESS" "SERVICE" "STATE"
+        printf "| %-10s | %-10s | %-10s | %-20s | %-20s | %-10s |\n" "PROTOCOL" "RECV-Q" "SEND-Q" "LOCAL ADDRESS" "FOREIGN ADDRESS" "SERVICE"
+        echo "-----------------------------------------------------------------------------------------------------------------------------"
         ss -tuln | awk 'NR>1 {
             split($5, a, ":")
             port = a[2]
-            cmd = "grep -w " port " /etc/services 2>/dev/null | awk \"{print \$1}\""
+            cmd = "grep -w " port " /etc/services 2>/dev/null | awk \"{print $1}\""
             cmd | getline service
             close(cmd)
             if (service == "") service = "Unknown"
-            printf "%-10s %-10s %-10s %-20s %-20s %-20s %-10s\n", $1, $2, $3, $5, $6, service, $7
+            printf "| %-10s | %-10s | %-10s | %-20s | %-20s | %-10s |\n", $1, $2, $3, $5, $6, service
         }'
     else
-        echo "Details for Port $1:"
-        printf "%-10s %-10s %-10s %-20s %-20s %-20s %-10s\n" "PROTOCOL" "RECV-Q" "SEND-Q" "LOCAL ADDRESS" "FOREIGN ADDRESS" "SERVICE" "STATE"
-        ss -tuln | awk -v port="$1" '$5 ~ ":"port"($|,) {
-            cmd = "grep -w " port " /etc/services 2>/dev/null | awk \"{print \$1}\""
+        echo "Details for Port $port_filter:"
+        printf "| %-10s | %-10s | %-10s | %-20s | %-20s | %-10s |\n" "PROTOCOL" "RECV-Q" "SEND-Q" "LOCAL ADDRESS" "FOREIGN ADDRESS" "SERVICE"
+        echo "------------------------------------------------------------------------------------------------------------------------------"
+        ss -tuln | awk -v port="$port_filter" '$5 ~ ":"port"($|,)" {
+            split($5, a, ":")
+            cmd = "grep -w " port " /etc/services 2>/dev/null | awk \"{print $1}\""
             cmd | getline service
             close(cmd)
             if (service == "") service = "Unknown"
-            printf "%-10s %-10s %-10s %-20s %-20s %-20s %-10s\n", $1, $2, $3, $5, $6, service, $7
+            printf "| %-10s | %-10s | %-10s | %-20s | %-20s | %-10s |\n", $1, $2, $3, $5, $6, service
         }'
     fi
 }
 function list_docker() {
-    if [ -z "$1" ]; then
-        echo "Docker Images:"
-        printf "%-40s %-20s %-20s %-20s\n" "REPOSITORY" "TAG" "IMAGE ID" "CREATED"
-        docker images --format "{{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.CreatedSince}}" |
-            awk '{printf "%-40s %-20s %-20s %-20s\n", $1, $2, $3, $4" "$5" "$6" "$7}'
-        echo ""
-        echo "Docker Containers:"
-        printf "%-20s %-20s %-20s %-20s %-20s %-20s\n" "CONTAINER ID" "IMAGE" "COMMAND" "CREATED" "STATUS" "PORTS"
-        docker ps -a --format "{{.ID}}\t{{.Image}}\t{{.Command}}\t{{.CreatedAt}}\t{{.Status}}\t{{.Ports}}" |
-            awk '{printf "%-20s %-20s %-20s %-20s %-20s %-20s\n", $1, $2, $3, $4" "$5, $6, $7}'
-    else
-        echo "Details for Container $1:"
-        docker inspect "$1" | jq '.[] | {Id, Name, Status: .State.Status, Image: .Config.Image, Ports: .NetworkSettings.Ports}' | jq -r 'to_entries | .[] | "\(.key): \(.value)"'
-    fi
+    echo " DOCKER STATUS "
+    echo "----------------------------------------------------------------------------------------------------"
+    echo "Docker Images:"
+    printf "| %-20s | %-10s | %-15s | %-10s | %-15s |\n" "REPOSITORY" "TAG" "IMAGE ID" "SIZE" "CREATED"
+    echo "----------------------------------------------------------------------------------------------------"
+    docker images --format "{{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}\t{{.CreatedSince}}" | \
+    awk '{printf "| %-20s | %-10s | %-15s | %-10s | %-15s |\n", $1, $2, $3, $4, $5" "$6" "$7}'
+
+    echo ""
+    echo "Docker Containers:"
+    printf "| %-15s | %-15s | %-50s | %-20s | %-15s | %-15s |\n" "CONTAINER ID" "IMAGE" "COMMAND" "CREATED" "STATUS" "PORTS"
+    echo "-----------------------------------------------------------------------------------------------------------------"
+    docker ps -a --format "{{.ID}}\t{{.Image}}\t{{.Command}}\t{{.CreatedAt}}\t{{.Status}}\t{{.Ports}}" | \
+    awk '{printf "| %-15s | %-15s | %-50s | %-20s | %-15s | %-15s |\n", $1, $2, $3, $4" "$5, $6, $7}'
 }
 function display_nginx() {
     if [ -z "$1" ]; then
@@ -66,7 +71,7 @@ function display_nginx() {
     else
         echo "Configuration for Domain $1:"
         grep -A 10 "server_name $1;" /etc/nginx/nginx.conf /etc/nginx/sites-enabled/* |
-            sed 's/^/    /'  # Indent for readability
+            sed 's/^/    /'
     fi
 }
 function list_users() {
@@ -80,11 +85,11 @@ function list_users() {
     fi
 }
 function display_time_range() {
-    echo "Activities between $1 and $2:"
+    echo " Activities between $1 and $2: "
+    echo "----------------------------------------------------------------------------------------------------"
     journalctl --since "$1" --until "$2" --no-pager |
-        awk '{printf "%-20s %-10s %-30s %s\n", $1, $2, $3, substr($0, index($0,$4))}'
+        awk '{printf "| %-20s | %-10s | %-30s | %s|\n", $1, $2, $3, substr($0, index($0,$4))}'
 }
-# Main script logic
 case "$1" in
     -p)
         display_ports "$2"
