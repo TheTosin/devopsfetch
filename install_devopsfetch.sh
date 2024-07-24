@@ -31,11 +31,9 @@ RestartSec=60
 WantedBy=multi-user.target
 EOF'
 
-# Reload systemd, enable, and start the service
 print_header "Starting and Enabling devopsfetch Service"
 sudo systemctl daemon-reload
 sudo systemctl enable devopsfetch
 sudo systemctl start devopsfetch
 
-# Final message
 print_header "Installation Completed"
