@@ -66,40 +66,51 @@ function list_docker() {
 function display_nginx() {
     if [ -z "$1" ]; then
         echo "Nginx Domains, Ports, and Proxies:"
-        echo "-----------------------------------------------------------------------------------------------"
-        printf "| %-30s | %-15s | %-30s | %-50s| \n" "DOMAIN" "PORT" "PROXY" "CONFIG FILE"
-        echo "-----------------------------------------------------------------------------------------------"
-        grep -H -r -E 'server_name|listen|proxy_pass' /etc/nginx/nginx.conf /etc/nginx/sites-enabled/* |
+        printf "%-30s %-15s %-30s %-50s\n" "DOMAIN" "PORT" "PROXY" "CONFIG FILE"
         awk '
-        BEGIN {OFS="\t"}
-        /server_name/ {domain=$2; gsub(";", "", domain); file=FILENAME}
-        /listen/ {port=$2; gsub(";", "", port)}
-        /proxy_pass/ {proxy=$2; gsub(";", "", proxy)}
-        {
+        BEGIN { OFS="\t" }
+        /server_name/ { domain=$2; gsub(";", "", domain) }
+        /listen/ { port=$2; gsub(";", "", port) }
+        /proxy_pass/ { proxy=$2; gsub(";", "", proxy) }
+        /}/ {
             if (domain && port) {
-                print domain, port, (proxy ? proxy : "N/A"), file
+                print domain, port, (proxy ? proxy : "N/A"), FILENAME
                 domain=""; port=""; proxy=""
             }
-        }' | sort -u |
+        }
+        ' /etc/nginx/nginx.conf /etc/nginx/sites-enabled/* | sort -u |
         while IFS=$'\t' read -r domain port proxy file; do
-            printf "| %-30s | %-15s | %-30s | %-50s |\n" "$domain" "$port" "$proxy" "$file"
+            printf "%-30s %-15s %-30s %-50s\n" "$domain" "$port" "$proxy" "$file"
         done
     else
         echo "Configuration for Domain $1:"
-        grep -H -r -A20 "server_name $1;" /etc/nginx/nginx.conf /etc/nginx/sites-enabled/* |
-        sed 's/^/    /' |
-        sed 's/--//' |
-        awk '/server_name '"$1"';/,/}/'
+        awk '/server {/,/}/ {
+            if ($0 ~ "server_name '"$1"';") {
+                in_server = 1
+                print "    " $0
+                next
+            }
+            if (in_server) {
+                print "    " $0
+                if ($0 ~ "}") {
+                    in_server = 0
+                    exit
+                }
+            }
+        }' /etc/nginx/nginx.conf /etc/nginx/sites-enabled/*
     fi
 }
 function list_users() {
     if [ -z "$1" ]; then
         echo "Users and Last Login Times:"
-        printf "%-20s %-30s\n" "USERNAME" "LAST LOGIN"
-        lastlog | awk 'NR>1 {printf "%-20s %-30s\n", $1, $4" "$5" "$6" "$7" "$8" "$9}'
+        echo "--------------------------------------------------------"
+        printf "| %-20s | %-30s |\n" "USERNAME" "LAST LOGIN"
+        echo "--------------------------------------------------------"
+        lastlog | awk 'NR>1 {printf "| %-20s | %-30s |\n", $1, $4" "$5" "$6" "$7" "$8" "$9}'
     else
         echo "Details for User $1:"
-        lastlog -u "$1" | awk 'NR>1 {printf "%-20s %-30s\n", "USERNAME:", $1; printf "%-20s %-30s\n", "LAST LOGIN:", $4" "$5" "$6" "$7" "$8" "$9}'
+        echo "-----------------------------------------------------------------------------------------------------------------"
+        lastlog -u "$1" | awk 'NR>1 {printf "| %-20s | %-30s |\n", "USERNAME:", $1; printf "%-20s %-30s\n", "LAST LOGIN:", $4" "$5" "$6" "$7" "$8" "$9}'
     fi
 }
 function display_time_range() {
