@@ -62,16 +62,34 @@ function list_docker() {
     docker ps -a --format "{{.ID}}\t{{.Image}}\t{{.Command}}\t{{.CreatedAt}}\t{{.Status}}\t{{.Ports}}" | \
     awk '{printf "| %-15s | %-15s | %-50s | %-20s | %-15s | %-15s |\n", $1, $2, $3, $4" "$5, $6, $7}'
 }
+
 function display_nginx() {
     if [ -z "$1" ]; then
-        echo "Nginx Domains and Ports:"
-        printf "%-40s %-20s\n" "DOMAIN" "PORT"
-        grep -E 'server_name|listen' /etc/nginx/nginx.conf /etc/nginx/sites-enabled/* |
-            awk '{printf "%-40s %-20s\n", $2, $3}'
+        echo "Nginx Domains, Ports, and Proxies:"
+        echo "-----------------------------------------------------------------------------------------------"
+        printf "| %-30s | %-15s | %-30s | %-50s| \n" "DOMAIN" "PORT" "PROXY" "CONFIG FILE"
+        echo "-----------------------------------------------------------------------------------------------"
+        grep -H -r -E 'server_name|listen|proxy_pass' /etc/nginx/nginx.conf /etc/nginx/sites-enabled/* |
+        awk '
+        BEGIN {OFS="\t"}
+        /server_name/ {domain=$2; gsub(";", "", domain); file=FILENAME}
+        /listen/ {port=$2; gsub(";", "", port)}
+        /proxy_pass/ {proxy=$2; gsub(";", "", proxy)}
+        {
+            if (domain && port) {
+                print domain, port, (proxy ? proxy : "N/A"), file
+                domain=""; port=""; proxy=""
+            }
+        }' | sort -u |
+        while IFS=$'\t' read -r domain port proxy file; do
+            printf "| %-30s | %-15s | %-30s | %-50s |\n" "$domain" "$port" "$proxy" "$file"
+        done
     else
         echo "Configuration for Domain $1:"
-        grep -A 10 "server_name $1;" /etc/nginx/nginx.conf /etc/nginx/sites-enabled/* |
-            sed 's/^/    /'
+        grep -H -r -A20 "server_name $1;" /etc/nginx/nginx.conf /etc/nginx/sites-enabled/* |
+        sed 's/^/    /' |
+        sed 's/--//' |
+        awk '/server_name '"$1"';/,/}/'
     fi
 }
 function list_users() {
